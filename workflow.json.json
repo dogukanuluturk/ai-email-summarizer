@@ -1,0 +1,360 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "==Aşağıdaki e-postayı analiz et ve SADECE geçerli bir JSON objesi döndür:\n{\n  \"id\": \"{{ $json.id }}\",\n  \"subject\": \"E-postanın konusu veya başlığı\",\n  \"sender\": \"Gönderen kişi veya kurum\",\n  \"priority\": \"Yüksek / Normal / Düşük\",\n  \"category\": \"Cevapla / Bak / Bilgi\",\n  \"summary\": \"1-2 cümlelik net Türkçe özet\",\n  \"action\": \"Yapılması gereken kısa aksiyon\",\n  \"is_irrelevant\": false\n}\n\nE-posta Detayları:\nKimden: {{ $json.From }}\nKonu: {{ $json.Subject }}\nİçerik: {{ $json.snippet }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        752,
+        112
+      ],
+      "id": "0583b3e7-8413-41f8-8e5e-6045b5caf6ae",
+      "name": "Basic LLM Chain",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "maxTries": 2,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "fromEmail": "user@example.com",
+        "toEmail": "={{ $('Loop Over Users').item.json.report_recipient_email }}",
+        "subject": "={{ $json.reportSubject }}",
+        "html": "={{ $json.htmlReport }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1888,
+        -96
+      ],
+      "id": "61c29a07-7eba-4bee-8747-884846c011e0",
+      "name": "Send an Email",
+      "webhookId": "2e0072ad-d121-449b-b13c-6164e7a98b75",
+      "credentials": {
+        "smtp": {
+          "id": "V1AsoktVj1OMHBpK",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -224,
+        0
+      ],
+      "id": "bc0d8fda-ba61-4314-af5f-82f046cf4339",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 100,
+        "filters": {
+          "q": "is:unread newer_than:1d -subject:\"Önemli E-Posta Özeti\""
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        128
+      ],
+      "id": "f39cfe15-6b8b-4edb-93ad-6080c1d2a2fa",
+      "name": "Get many messages",
+      "webhookId": "bbe08918-089b-4bae-a392-a19baa20ca2d",
+      "retryOnFail": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "JfAoUFVnTmkZRqJD",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nlet validEmails = [];\n\n// Gmail düğümündeki orijinal mailleri sırasıyla al (En garanti yöntem):\nlet rawGmailItems = [];\ntry {\n  rawGmailItems = $('Get many messages').all();\n} catch (e) {\n  rawGmailItems = [];\n}\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const data = item.json || {};\n  let rawContent = data.text || data.output || data.response || data;\n\n  // 1. JSON Ayrıştırma & Model Yanıt Kontrolü\n  let parsed = null;\n  if (typeof rawContent === 'string') {\n    try {\n      const cleaned = rawContent.replace(/```json/g, '').replace(/```/g, '').trim();\n      parsed = JSON.parse(cleaned);\n    } catch (e) {\n      parsed = null;\n    }\n  } else if (typeof rawContent === 'object' && rawContent !== null) {\n    parsed = rawContent;\n  }\n\n  // 2. ID'yi Hem Modelden Hem Gmail Düğümünden Yakala\n  let mailId = '';\n  if (parsed && parsed.id) {\n    mailId = parsed.id;\n  } else if (rawGmailItems[i] && rawGmailItems[i].json && rawGmailItems[i].json.id) {\n    mailId = rawGmailItems[i].json.id;\n  } else if (data.id || data.messageId || data.threadId) {\n    mailId = data.id || data.messageId || data.threadId;\n  }\n\n  // 3. Değerleri Toparla\n  let subject = (parsed && parsed.subject && parsed.subject.trim().length > 0) \n                ? parsed.subject \n                : (data.Subject || data.subject || 'Konusuz E-posta');\n\n  let sender = (parsed && parsed.sender && parsed.sender.trim().length > 0) \n               ? parsed.sender \n               : (data.From || data.from || 'Bilinmiyor');\n\n  let summary = (parsed && parsed.summary && parsed.summary.trim().length > 0) \n                ? parsed.summary \n                : (data.snippet && data.snippet.trim().length > 0 \n                    ? data.snippet.slice(0, 200) + '...' \n                    : 'İçerik özeti çıkarılamadı.');\n\n  let priority = (parsed && parsed.priority) || 'Normal';\n  let category = (parsed && parsed.category) || 'Bak';\n  let action = (parsed && parsed.action && parsed.action.trim().length > 0) \n               ? parsed.action \n               : 'Doğrudan e-postayı inceleyiniz.';\n  \n  let isIrrelevant = parsed && (parsed.is_irrelevant === true || String(parsed.is_irrelevant).toLowerCase() === 'true');\n\n  // 4. Sistem Maillerini ve Boş Kayıtları Eleme\n  if (\n    subject.includes('E-Posta Özeti') || \n    subject.includes('Günlük E-Posta') || \n    subject.includes('Önemli E-Posta') ||\n    (subject === 'Konusuz E-posta' && summary.includes('İçerik özeti çıkarılamadı')) ||\n    (subject === 'Konusuz E-posta' && sender === 'Bilinmiyor') ||\n    summary.includes('Lütfen analiz edilecek') ||\n    isIrrelevant\n  ) {\n    continue;\n  }\n\n  // 5. Öncelik & Acil Durum Kuralı\n  const fullText = (subject + ' ' + summary).toLowerCase();\n  if (\n    fullText.includes('acil') || \n    fullText.includes('urgent') || \n    fullText.includes('kritik') || \n    fullText.includes('production') || \n    fullText.includes('yetkilendirme')\n  ) {\n    priority = 'Yüksek';\n    category = 'Cevapla';\n    action = 'Acil Müdahale / İnceleme Gerekli';\n  }\n\n  validEmails.push({\n    subject: subject,\n    sender: sender,\n    priority: priority,\n    category: category,\n    summary: summary,\n    action: action,\n    mailId: mailId\n  });\n}\n\n// 6. Önceliğe Göre Sıralama (Yüksekler en üstte)\nvalidEmails.sort((a, b) => {\n  if (a.priority === 'Yüksek' && b.priority !== 'Yüksek') return -1;\n  if (a.priority !== 'Yüksek' && b.priority === 'Yüksek') return 1;\n  return 0;\n});\n\nconst totalCount = validEmails.length;\n\n// 7. HTML Kart Şablonu\nlet cardsHtml = '';\nfor (let i = 0; i < validEmails.length; i++) {\n  const mail = validEmails[i];\n  \n  let priorityBg = '#3b82f6'; // Mavi (Normal)\n  const pLower = String(mail.priority).toLowerCase();\n  if (pLower.includes('yüksek') || pLower.includes('high') || pLower.includes('acil')) {\n    priorityBg = '#ef4444'; // Kırmızı (Yüksek)\n  } else if (pLower.includes('düşük') || pLower.includes('low')) {\n    priorityBg = '#64748b'; // Gri (Düşük)\n  }\n\n  // Doğrudan Gmail linki veya arama linki butonu:\n  const mailUrl = mail.mailId \n    ? `https://mail.google.com/mail/u/0/#inbox/${mail.mailId}` \n    : `https://mail.google.com/mail/u/0/#search/${encodeURIComponent(mail.subject)}`;\n\n  const actionButtonHtml = `\n    <div style=\"margin-top: 10px; text-align: right;\">\n      <a href=\"${mailUrl}\" target=\"_blank\" style=\"display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 6px;\">\n        Maili Aç ↗\n      </a>\n    </div>\n  `;\n\n  cardsHtml += `\n    <div style=\"background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);\">\n      <div style=\"display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;\">\n        <strong style=\"font-size: 15px; color: #1e293b;\">${mail.subject}</strong>\n        <div>\n          <span style=\"background-color: ${priorityBg}; color: #ffffff; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 12px; margin-right: 4px;\">${mail.priority}</span>\n          <span style=\"background-color: #e2e8f0; color: #334155; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 12px;\">${mail.category}</span>\n        </div>\n      </div>\n      <p style=\"margin: 0 0 6px 0; font-size: 13px; color: #64748b;\"><strong>Kimden:</strong> ${mail.sender}</p>\n      <p style=\"margin: 0 0 8px 0; font-size: 14px; color: #334155; line-height: 1.4;\">${mail.summary}</p>\n      <div style=\"font-size: 12px; color: #0f172a;\"><strong>Aksiyon:</strong> ${mail.action}</div>\n      ${actionButtonHtml}\n    </div>\n  `;\n}\n\nconst finalHtml = `\n  <div style=\"font-family: Arial, sans-serif; max-width: 650px; margin: auto; background-color: #f8fafc; padding: 20px; border-radius: 10px;\">\n    <h2 style=\"color: #0f172a; margin-top: 0;\">📬 Günlük E-Posta Özeti</h2>\n    <p style=\"color: #475569; font-size: 14px; margin-bottom: 20px;\">Bugün ilgilenmeniz gereken toplam <strong>${totalCount}</strong> önemli e-posta bulundu.</p>\n    ${cardsHtml.length > 0 ? cardsHtml : '<p style=\"color: #64748b;\">İncelenecek yeni önemli e-posta bulunmamaktadır.</p>'}\n  </div>\n`;\n\nreturn [\n  {\n    json: {\n      htmlReport: finalHtml,\n      mailCount: totalCount,\n      reportSubject: `${totalCount} Adet Önemli E-Posta Özeti`,\n      hasEmails: totalCount > 0\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        32
+      ],
+      "id": "f752544d-98f7-4ae5-ae18-40e1d46a998e",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, user_name, imap_host, imap_port, imap_user, imap_password, report_recipient_email, last_processed_at\nFROM user_email_configs\nWHERE is_active = true",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f8a30ea4-9390-4e00-99f0-b4067d4b986d",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "9rjjIKibAKtsAZot",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE user_email_configs\nSET last_processed_at = NOW()\nWHERE id = {{ $('Loop Over Users').item.json.id }};",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2288,
+        96
+      ],
+      "id": "eadfa371-7efb-4496-b912-ef6cd21d38cd",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "9rjjIKibAKtsAZot",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+          "mode": "id"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "maxTokens": 32768,
+          "temperature": 0.2,
+          "extraBody": "{\n  \"enable_thinking\": false\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        960,
+        432
+      ],
+      "id": "7120f8bf-65b7-4247-8f1a-b56cdd3ebb0d",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "GI3I29s01pnCoa7F",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "afcfcfb2-d9bc-4bf0-9b2d-c5b456e6422c",
+      "name": "Loop Over Users"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "210feb98-4410-4d1a-9ca1-beb32c9c075a",
+              "leftValue": "={{ $json.mailCount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1488,
+        80
+      ],
+      "id": "03b39695-f79b-4225-ad67-7db1c736c67f",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many messages": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an Email": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Users": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get many messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Europe/Istanbul",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "f9340e53-1335-452a-9e63-15cc90f9bc37",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a1b252e58e3047a9e5f2d96e285d4294c6b3138d113be8c382cbe33655ed777e"
+  },
+  "nodeGroups": [],
+  "id": "8hNIlDdZrQoLhx47",
+  "tags": []
+}
