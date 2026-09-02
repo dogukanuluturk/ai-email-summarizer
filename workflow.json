@@ -4,14 +4,14 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "==Aşağıdaki e-postayı analiz et ve SADECE geçerli bir JSON objesi döndür:\n{\n  \"id\": \"{{ $json.id }}\",\n  \"subject\": \"E-postanın konusu veya başlığı\",\n  \"sender\": \"Gönderen kişi veya kurum\",\n  \"priority\": \"Yüksek / Normal / Düşük\",\n  \"category\": \"Cevapla / Bak / Bilgi\",\n  \"summary\": \"1-2 cümlelik net Türkçe özet\",\n  \"action\": \"Yapılması gereken kısa aksiyon\",\n  \"is_irrelevant\": false\n}\n\nE-posta Detayları:\nKimden: {{ $json.From }}\nKonu: {{ $json.Subject }}\nİçerik: {{ $json.snippet }}",
+        "text": "===Aşağıdaki e-postayı analiz et ve SADECE geçerli bir JSON objesi döndür:\n{\n  \"id\": \"{{ $json.id }}\",\n  \"subject\": \"E-postanın konusu veya başlığı\",\n  \"sender\": \"Gönderen kişi veya kurum\",\n  \"priority\": \"Yüksek / Normal / Düşük\",\n  \"category\": \"Cevapla / Bak / Bilgi\",\n  \"summary\": \"1-2 cümlelik net Türkçe özet\",\n  \"action\": \"Yapılması gereken kısa aksiyon\",\n  \"is_irrelevant\": false,\n  \"is_job_application\": false,\n  \"applicant_name\": \"Adayın adı soyadı (tespit edilemezse boş bırak)\"\n}\n\nE-posta Detayları:\nKimden: {{ $json.From }}\nKonu: {{ $json.Subject }}\nİçerik: {{ $json.snippet }}\n\nÖNEMLİ KURALLAR:\n1. Eğer bu e-posta bir iş, staj, aday özgeçmişi (CV) veya iş başvuru süreci ile ilgiliyse \"is_job_application\" değerini true yap. Değilse kesinlikle false yap.\n2. Kariyer sitelerinden (LinkedIn, Kariyer.net vb.) gelen genel bülten veya iş ilanı bildirimlerini başvuru sayma, doğrudan adayın kendisinden gelen mailleri başvuru olarak işaretle.\n3. Başvuru ise \"applicant_name\" alanına adayın adını yazmaya çalış; metinden çıkarılamıyorsa e-postanın gönderen kısmını baz al.",
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
       "position": [
-        752,
-        112
+        672,
+        -112
       ],
       "id": "0583b3e7-8413-41f8-8e5e-6045b5caf6ae",
       "name": "Basic LLM Chain",
@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "fromEmail": "user@example.com",
+        "fromEmail": "dgknltrk1907@gmail.com",
         "toEmail": "={{ $('Loop Over Users').item.json.report_recipient_email }}",
         "subject": "={{ $json.reportSubject }}",
         "html": "={{ $json.htmlReport }}",
@@ -31,8 +31,8 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        1888,
-        -96
+        2032,
+        -128
       ],
       "id": "61c29a07-7eba-4bee-8747-884846c011e0",
       "name": "Send an Email",
@@ -74,8 +74,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        448,
-        128
+        464,
+        80
       ],
       "id": "f39cfe15-6b8b-4edb-93ad-6080c1d2a2fa",
       "name": "Get many messages",
@@ -95,8 +95,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1152,
-        32
+        1328,
+        -16
       ],
       "id": "f752544d-98f7-4ae5-ae18-40e1d46a998e",
       "name": "Code in JavaScript1"
@@ -131,8 +131,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.7,
       "position": [
-        2288,
-        96
+        2448,
+        64
       ],
       "id": "eadfa371-7efb-4496-b912-ef6cd21d38cd",
       "name": "Execute a SQL query1",
@@ -212,18 +212,153 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1488,
-        80
+        1648,
+        48
       ],
       "id": "03b39695-f79b-4225-ad67-7db1c736c67f",
       "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f4dd1e7d-3171-484a-a245-3f8dff7736a5",
+              "leftValue": "={{ (() => {\n  try {\n    const raw = $json.text || '';\n    const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();\n    return JSON.parse(clean).is_job_application === true;\n  } catch (e) {\n    return false;\n  }\n})() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        -288
+      ],
+      "id": "25a08e11-c0a6-4571-aaa7-cc3e1f86db52",
+      "name": "If Application"
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Get many messages').item.json.id }}",
+        "emailType": "text",
+        "message": "Merhaba,  Başvurunuzu aldık. Uygun pozisyon olduğunda tarafınıza geri dönüş yapacağız.  İlginiz için teşekkür ederiz. CMV Teknoloji",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1424,
+        -432
+      ],
+      "id": "6247c225-4c06-4eca-9e6d-a36c302e8caa",
+      "name": "Send Auto Reply",
+      "webhookId": "28348ceb-a021-4f82-ad60-b83fc1748b50",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "JfAoUFVnTmkZRqJD",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS processed_applications (\n    id SERIAL PRIMARY KEY,\n    message_id VARCHAR(255) UNIQUE,\n    applicant_email VARCHAR(255),\n    replied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\nINSERT INTO processed_applications (message_id, applicant_email) \nVALUES ('{{ $('Get many messages').item.json.id }}', '{{ $('Get many messages').item.json.From }}')\nON CONFLICT (message_id) DO NOTHING;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1648,
+        -432
+      ],
+      "id": "d725d15d-4831-498a-baed-afbc45654708",
+      "name": "Execute a SQL query2",
+      "credentials": {
+        "postgres": {
+          "id": "9rjjIKibAKtsAZot",
+          "name": "Postgres account"
+        }
+      }
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "Basic LLM Chain": [
+      {
+        "json": {
+          "text": "{\n  \"id\": \"1a061bdd3a03525c\",\n  \"subject\": \"Staj Başvurusu - Doğukan Ulutürk\",\n  \"sender\": \"Obamium Obamium\",\n  \"priority\": \"Normal\",\n  \"category\": \"Cevapla\",\n  \"summary\": \"Doğukan Ulutürk, yazılım mühendisliği stajyeri pozisyonu için başvurmuş ve özgeçmişini e-posta ile iletmiştir.\",\n  \"action\": \"Özgeçmişi inceleyip staj başvurusunu değerlendirin.\",\n  \"is_irrelevant\": false,\n  \"is_job_application\": true,\n  \"applicant_name\": \"Doğukan Ulutürk\"\n}"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "text": "{\n  \"id\": \"1a0616140c50020b\",\n  \"subject\": \"MAD Parfumeur şirketinde Software Developer\",\n  \"sender\": \"LinkedIn İş İlanı Uyarıları\",\n  \"priority\": \"Normal\",\n  \"category\": \"Bilgi\",\n  \"summary\": \"LinkedIn üzerinden gelen, MAD Parfumeur şirketinde Software Developer pozisyonu için bir iş ilanı bildirimidir.\",\n  \"action\": \"İlgilenilirse LinkedIn iş ilanları sayfasından detaylar incelenmeli ve gerekirse başvuru yapılmalıdır.\",\n  \"is_irrelevant\": false,\n  \"is_job_application\": false,\n  \"applicant_name\": \"\"\n}"
+        },
+        "pairedItem": {
+          "item": 1
+        }
+      },
+      {
+        "json": {
+          "text": "```json\n{\n  \"id\": \"1a060f3627141763\",\n  \"subject\": \"mangolab.ai şirketinde Junior Software Engineer\",\n  \"sender\": \"LinkedIn İş İlanı Uyarıları\",\n  \"priority\": \"Normal\",\n  \"category\": \"Bilgi\",\n  \"summary\": \"LinkedIn'den otomatik olarak gönderilen bir iş ilanı uyarısıdır; mangolab.ai şirketinde Junior Software Engineer pozisyonu için bilgi vermektedir.\",\n  \"action\": \"İlgileniyorsa LinkedIn üzerinden ilana göz atmayı veya başvurmayı değerlendirin.\",\n  \"is_irrelevant\": false,\n  \"is_job_application\": false,\n  \"applicant_name\": \"\"\n}\n```"
+        },
+        "pairedItem": {
+          "item": 2
+        }
+      },
+      {
+        "json": {
+          "error": "The service failed to process your request"
+        },
+        "pairedItem": {
+          "item": 3
+        }
+      },
+      {
+        "json": {
+          "text": "{\n  \"id\": \"1a05d674847c9b53\",\n  \"subject\": \"Öğrencilere 50.000 TL'ye Kadar Burs Veren 5 Fırsat!\",\n  \"sender\": \"Youthside\",\n  \"priority\": \"Normal\",\n  \"category\": \"Bilgi\",\n  \"summary\": \"İstanbul Büyükşehir Belediyesi Genç Üniversiteli Bursu ve diğer 4 burs fırsatına dair 2026-2027 dönemi bilgilendirmesi.\",\n  \"action\": \"Burs başvuru şartlarını ve tarihlerini incele.\",\n  \"is_irrelevant\": false,\n  \"is_job_application\": false,\n  \"applicant_name\": \"\"\n}"
+        },
+        "pairedItem": {
+          "item": 4
+        }
+      },
+      {
+        "json": {
+          "text": "{\n  \"id\": \"1a05ceb4ea6a0fe5\",\n  \"subject\": \"CFO Akademi Başlıyor, Kendiniz için Yatırım Yapma Zamanı!\",\n  \"sender\": \"Yenibiris.com\",\n  \"priority\": \"Düşük\",\n  \"category\": \"Bilgi\",\n  \"summary\": \"Yenibiris.com üzerinden CFO Akademi eğitim programının başladığına dair tanıtım ve kayıt çağrısı içeren bir pazarlama e-postası.\",\n  \"action\": \"Eğitim programı hakkında detaylı bilgi almak veya kayıt olmak için web sitesini ziyaret et.\",\n  \"is_irrelevant\": true,\n  \"is_job_application\": false,\n  \"applicant_name\": \"\"\n}"
+        },
+        "pairedItem": {
+          "item": 5
+        }
+      }
+    ]
+  },
   "connections": {
     "Basic LLM Chain": {
       "main": [
         [
+          {
+            "node": "If Application",
+            "type": "main",
+            "index": 0
+          },
           {
             "node": "Code in JavaScript1",
             "type": "main",
@@ -338,6 +473,29 @@
           }
         ]
       ]
+    },
+    "If Application": {
+      "main": [
+        [
+          {
+            "node": "Send Auto Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Send Auto Reply": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -349,7 +507,7 @@
     "timezone": "Europe/Istanbul",
     "callerPolicy": "workflowsFromSameOwner"
   },
-  "versionId": "f9340e53-1335-452a-9e63-15cc90f9bc37",
+  "versionId": "e05d1151-b605-43c4-b021-6b0228ace049",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "a1b252e58e3047a9e5f2d96e285d4294c6b3138d113be8c382cbe33655ed777e"
