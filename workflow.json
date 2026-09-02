@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "fromEmail": "dgknltrk1907@gmail.com",
+        "fromEmail": "noreply@company.com",
         "toEmail": "={{ $('Loop Over Users').item.json.report_recipient_email }}",
         "subject": "={{ $json.reportSubject }}",
         "html": "={{ $json.htmlReport }}",
