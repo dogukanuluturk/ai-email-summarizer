@@ -298,58 +298,7 @@
       }
     }
   ],
-  "pinData": {
-    "Basic LLM Chain": [
-      {
-        "json": {
-          "text": "{\n  \"id\": \"1a061bdd3a03525c\",\n  \"subject\": \"Staj Başvurusu - Doğukan Ulutürk\",\n  \"sender\": \"Obamium Obamium\",\n  \"priority\": \"Normal\",\n  \"category\": \"Cevapla\",\n  \"summary\": \"Doğukan Ulutürk, yazılım mühendisliği stajyeri pozisyonu için başvurmuş ve özgeçmişini e-posta ile iletmiştir.\",\n  \"action\": \"Özgeçmişi inceleyip staj başvurusunu değerlendirin.\",\n  \"is_irrelevant\": false,\n  \"is_job_application\": true,\n  \"applicant_name\": \"Doğukan Ulutürk\"\n}"
-        },
-        "pairedItem": {
-          "item": 0
-        }
-      },
-      {
-        "json": {
-          "text": "{\n  \"id\": \"1a0616140c50020b\",\n  \"subject\": \"MAD Parfumeur şirketinde Software Developer\",\n  \"sender\": \"LinkedIn İş İlanı Uyarıları\",\n  \"priority\": \"Normal\",\n  \"category\": \"Bilgi\",\n  \"summary\": \"LinkedIn üzerinden gelen, MAD Parfumeur şirketinde Software Developer pozisyonu için bir iş ilanı bildirimidir.\",\n  \"action\": \"İlgilenilirse LinkedIn iş ilanları sayfasından detaylar incelenmeli ve gerekirse başvuru yapılmalıdır.\",\n  \"is_irrelevant\": false,\n  \"is_job_application\": false,\n  \"applicant_name\": \"\"\n}"
-        },
-        "pairedItem": {
-          "item": 1
-        }
-      },
-      {
-        "json": {
-          "text": "```json\n{\n  \"id\": \"1a060f3627141763\",\n  \"subject\": \"mangolab.ai şirketinde Junior Software Engineer\",\n  \"sender\": \"LinkedIn İş İlanı Uyarıları\",\n  \"priority\": \"Normal\",\n  \"category\": \"Bilgi\",\n  \"summary\": \"LinkedIn'den otomatik olarak gönderilen bir iş ilanı uyarısıdır; mangolab.ai şirketinde Junior Software Engineer pozisyonu için bilgi vermektedir.\",\n  \"action\": \"İlgileniyorsa LinkedIn üzerinden ilana göz atmayı veya başvurmayı değerlendirin.\",\n  \"is_irrelevant\": false,\n  \"is_job_application\": false,\n  \"applicant_name\": \"\"\n}\n```"
-        },
-        "pairedItem": {
-          "item": 2
-        }
-      },
-      {
-        "json": {
-          "error": "The service failed to process your request"
-        },
-        "pairedItem": {
-          "item": 3
-        }
-      },
-      {
-        "json": {
-          "text": "{\n  \"id\": \"1a05d674847c9b53\",\n  \"subject\": \"Öğrencilere 50.000 TL'ye Kadar Burs Veren 5 Fırsat!\",\n  \"sender\": \"Youthside\",\n  \"priority\": \"Normal\",\n  \"category\": \"Bilgi\",\n  \"summary\": \"İstanbul Büyükşehir Belediyesi Genç Üniversiteli Bursu ve diğer 4 burs fırsatına dair 2026-2027 dönemi bilgilendirmesi.\",\n  \"action\": \"Burs başvuru şartlarını ve tarihlerini incele.\",\n  \"is_irrelevant\": false,\n  \"is_job_application\": false,\n  \"applicant_name\": \"\"\n}"
-        },
-        "pairedItem": {
-          "item": 4
-        }
-      },
-      {
-        "json": {
-          "text": "{\n  \"id\": \"1a05ceb4ea6a0fe5\",\n  \"subject\": \"CFO Akademi Başlıyor, Kendiniz için Yatırım Yapma Zamanı!\",\n  \"sender\": \"Yenibiris.com\",\n  \"priority\": \"Düşük\",\n  \"category\": \"Bilgi\",\n  \"summary\": \"Yenibiris.com üzerinden CFO Akademi eğitim programının başladığına dair tanıtım ve kayıt çağrısı içeren bir pazarlama e-postası.\",\n  \"action\": \"Eğitim programı hakkında detaylı bilgi almak veya kayıt olmak için web sitesini ziyaret et.\",\n  \"is_irrelevant\": true,\n  \"is_job_application\": false,\n  \"applicant_name\": \"\"\n}"
-        },
-        "pairedItem": {
-          "item": 5
-        }
-      }
-    ]
-  },
+  "pinData": {},
   "connections": {
     "Basic LLM Chain": {
       "main": [
@@ -507,7 +456,7 @@
     "timezone": "Europe/Istanbul",
     "callerPolicy": "workflowsFromSameOwner"
   },
-  "versionId": "e05d1151-b605-43c4-b021-6b0228ace049",
+  "versionId": "24051d44-a410-4f3a-97a2-941a03ac5a63",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "a1b252e58e3047a9e5f2d96e285d4294c6b3138d113be8c382cbe33655ed777e"
