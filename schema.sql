@@ -23,6 +23,14 @@ CREATE TABLE IF NOT EXISTS processed_emails (
     CONSTRAINT unique_user_email UNIQUE (user_id, email_message_id)
 );
 
--- Example Insert
+-- Candidate Job/Internship Applications Idempotency Tracking Table
+CREATE TABLE IF NOT EXISTS processed_applications (
+    id SERIAL PRIMARY KEY,
+    message_id VARCHAR(255) UNIQUE NOT NULL,
+    applicant_email VARCHAR(255) NOT NULL,
+    replied_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Example Inserts
 INSERT INTO user_email_configs (user_name, imap_host, imap_user, imap_password, report_recipient_email)
 VALUES ('Demo User', 'imap.gmail.com', 'user@example.com', 'your-app-password', 'user@example.com');
