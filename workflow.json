@@ -257,7 +257,7 @@
         "operation": "reply",
         "messageId": "={{ $('Get many messages').item.json.id }}",
         "emailType": "text",
-        "message": "Merhaba,  Başvurunuzu aldık. Uygun pozisyon olduğunda tarafınıza geri dönüş yapacağız.  İlginiz için teşekkür ederiz. CMV Teknoloji",
+        "message": "Merhaba,  Başvurunuzu aldık. Uygun pozisyon olduğunda tarafınıza geri dönüş yapacağız.  İlginiz için teşekkür ederiz.",
         "options": {}
       },
       "type": "n8n-nodes-base.gmail",
